@@ -3,7 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "vite": "npm run dev --prefix frontend",
-    "dev": "npx nodemon --cwd backend index.js"
+    "vite": "npm run dev --prefix frontend"
   }
 }
