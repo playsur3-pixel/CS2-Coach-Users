@@ -1,0 +1,15 @@
+TABLE  |
+		VALEUR/SOUS_TABLE
+				VALEUR
+------------------------------
+		Utilisateur :
+			Login / R-mail / Mot de passe
+Types de joueurs : 
+	SoloQ / Team
+Type de clients	
+	Nouveau / Régulier / Expert
+Performances
+		Exercice 1 / KPM
+		Exercice 2 / XH
+
+	

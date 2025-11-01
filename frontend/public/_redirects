@@ -1,0 +1,4 @@
+# Toutes les routes côté client vont vers index.html (pour React Router)
+# sauf si la page n'existe vraiment pas
+
+/*    /index.html   200

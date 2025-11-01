@@ -1,0 +1,9 @@
+{
+  "name": "cs2-coaching-root",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "vite": "npm run dev --prefix frontend",
+    "dev": "npx nodemon --cwd backend index.js"
+  }
+}

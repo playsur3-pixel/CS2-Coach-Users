@@ -1,0 +1,107 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient de fond principal -->
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient pour les éléments décoratifs -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#ef4444;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.4" />
+    </linearGradient>
+    
+    <!-- Gradient pour les particules -->
+    <radialGradient id="particleGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Filtre de flou pour les éléments d'arrière-plan -->
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
+    </filter>
+  </defs>
+  
+  <!-- Fond principal -->
+  <rect width="1920" height="1080" fill="url(#mainGradient)"/>
+  
+  <!-- Formes géométriques abstraites en arrière-plan -->
+  <g opacity="0.1" filter="url(#blur)">
+    <!-- Hexagones stylisés -->
+    <polygon points="200,100 300,50 400,100 400,200 300,250 200,200" fill="url(#accentGradient)"/>
+    <polygon points="1500,300 1600,250 1700,300 1700,400 1600,450 1500,400" fill="url(#accentGradient)"/>
+    <polygon points="100,700 200,650 300,700 300,800 200,850 100,800" fill="url(#accentGradient)"/>
+    
+    <!-- Cercles décoratifs -->
+    <circle cx="1600" cy="150" r="80" fill="url(#accentGradient)"/>
+    <circle cx="300" cy="900" r="60" fill="url(#accentGradient)"/>
+    <circle cx="1700" cy="800" r="100" fill="url(#accentGradient)"/>
+  </g>
+  
+  <!-- Lignes de connexion stylisées -->
+  <g opacity="0.15" stroke="url(#accentGradient)" stroke-width="2" fill="none">
+    <path d="M0,200 Q400,100 800,200 T1600,150"/>
+    <path d="M200,500 Q600,400 1000,500 T1800,450"/>
+    <path d="M0,800 Q500,700 1000,800 T1920,750"/>
+  </g>
+  
+  <!-- Particules flottantes -->
+  <g opacity="0.6">
+    <circle cx="150" cy="200" r="3" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="200;180;200" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="400" cy="350" r="2" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="350;330;350" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="800" cy="150" r="4" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="150;130;150" dur="5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1200" cy="400" r="3" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="400;380;400" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1600" cy="600" r="2" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="600;580;600" dur="4.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="300" cy="750" r="3" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="750;730;750" dur="3.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1400" cy="900" r="4" fill="url(#particleGradient)">
+      <animate attributeName="cy" values="900;880;900" dur="4.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Grille subtile en arrière-plan -->
+  <g opacity="0.05" stroke="#ffffff" stroke-width="1" fill="none">
+    <defs>
+      <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+        <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#ffffff" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="1920" height="1080" fill="url(#grid)"/>
+  </g>
+  
+  <!-- Éléments de profondeur avec effet de parallaxe -->
+  <g opacity="0.08">
+    <!-- Formes triangulaires -->
+    <polygon points="0,0 200,0 100,173" fill="url(#accentGradient)"/>
+    <polygon points="1720,0 1920,0 1820,173" fill="url(#accentGradient)"/>
+    <polygon points="0,907 200,1080 0,1080" fill="url(#accentGradient)"/>
+    <polygon points="1720,907 1920,1080 1720,1080" fill="url(#accentGradient)"/>
+  </g>
+  
+  <!-- Overlay central pour mettre en valeur le contenu -->
+  <ellipse cx="960" cy="540" rx="600" ry="400" fill="url(#mainGradient)" opacity="0.3"/>
+  
+  <!-- Effet de vignette subtil -->
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.4" />
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+</svg>
