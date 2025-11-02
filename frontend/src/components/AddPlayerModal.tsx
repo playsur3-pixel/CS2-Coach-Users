@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { X, Users } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { X, Users } from "lucide-react";
 
 type Props = {
   onClose: () => void;
@@ -18,71 +17,32 @@ type ProfileItem = {
 export default function AddPlayerModal({ onClose, onSuccess }: Props) {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>('');
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [profilesLoading, setProfilesLoading] = useState(true);
-  const [manualName, setManualName] = useState('');
-
-  useEffect(() => {
-    // Try to load registered users from a public profiles table
-    // Expect a table named 'profiles' with at least: id, email, username
-    (async () => {
-      setProfilesLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, username')
-        .order('email', { ascending: true });
-
-      if (error) {
-        // If table does not exist or RLS forbids read, show a helpful message
-        setError(
-          "Impossible de charger la liste des utilisateurs. Vérifiez la table 'profiles' et les droits de lecture (RLS)."
-        );
-        setProfilesLoading(false);
-        return;
-      }
-
-      setProfiles(data || []);
-      if (data && data.length > 0) {
-        setSelectedProfileId(data[0].id);
-      }
-      setProfilesLoading(false);
-    })();
-  }, []);
+  const [manualName, setManualName] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     if (!selectedProfileId && !manualName.trim()) {
-      setError('Sélectionnez un joueur existant ou saisissez un nom de joueur.');
+      setError(
+        "Sélectionnez un joueur existant ou saisissez un nom de joueur."
+      );
       setLoading(false);
       return;
     }
 
     const selected = profiles.find((p) => p.id === selectedProfileId);
-    const playerName = manualName.trim() || selected?.username || selected?.email || 'Unknown Player';
+    const playerName =
+      manualName.trim() ||
+      selected?.username ||
+      selected?.email ||
+      "Unknown Player";
 
-    const { error: insertError } = await supabase
-      .from('players')
-      .insert([
-        {
-          user_id: user?.id,
-          // We keep the current schema: store the chosen user's display as player_name
-          // If you later add a column player_user_id (FK to profiles.id), we can insert it too
-          player_name: playerName,
-        },
-      ]);
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-    } else {
-      onSuccess();
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -90,7 +50,9 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-orange-500" />
-            <h2 className="text-xl font-bold text-white">Ajouter un joueur existant</h2>
+            <h2 className="text-xl font-bold text-white">
+              Ajouter un joueur existant
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -112,7 +74,9 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
               UTILISATEUR (inscrit sur le site)
             </label>
             {profilesLoading ? (
-              <div className="text-zinc-400 text-sm">Chargement des utilisateurs…</div>
+              <div className="text-zinc-400 text-sm">
+                Chargement des utilisateurs…
+              </div>
             ) : profiles.length === 0 ? (
               <>
                 <input
@@ -123,7 +87,8 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
                   placeholder="Saisissez le nom du joueur (ex: demo)"
                 />
                 <p className="text-xs text-zinc-500 mt-2">
-                  Aucun utilisateur listé. Saisissez manuellement le nom du joueur.
+                  Aucun utilisateur listé. Saisissez manuellement le nom du
+                  joueur.
                 </p>
               </>
             ) : (
@@ -148,7 +113,9 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
 
           {profiles.length > 0 && (
             <div className="mb-6">
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">NOM DU JOUEUR (optionnel)</label>
+              <label className="block text-zinc-300 text-sm font-semibold mb-2">
+                NOM DU JOUEUR (optionnel)
+              </label>
               <input
                 type="text"
                 value={manualName}
@@ -169,10 +136,14 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
             </button>
             <button
               type="submit"
-              disabled={loading || profilesLoading || (!selectedProfileId && !manualName.trim())}
+              disabled={
+                loading ||
+                profilesLoading ||
+                (!selectedProfileId && !manualName.trim())
+              }
               className="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white py-3 px-4 rounded-md transition shadow-lg shadow-orange-600/20 font-semibold disabled:opacity-50"
             >
-              {loading ? 'AJOUT…' : 'AJOUTER'}
+              {loading ? "AJOUT…" : "AJOUTER"}
             </button>
           </div>
         </form>

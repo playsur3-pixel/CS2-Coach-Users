@@ -8,7 +8,6 @@ import ResetPassword from "./components/ResetPassword";
 import AdminDashboard from "../assets/AdminDashboard";
 import CoachDashboard from "./components/CoachDashboard";
 import PlayerPage from "./components/PlayerPage";
-import { Player } from "./lib/supabase";
 
 function App() {
   const { user } = useAuth();

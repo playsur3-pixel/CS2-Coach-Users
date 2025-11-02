@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase, Profile, TrainingSession } from '../lib/supabase';
 import { Users, Calendar, Mail, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import InviteModal from '../components/InviteModal';
@@ -15,67 +14,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      const { data: coachesData, error: coachesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'coach');
-
-      const { data: playersData, error: playersError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'player');
-
-      if (coachesError) throw coachesError;
-      if (playersError) throw playersError;
-
-      const coachesWithSessions = await Promise.all(
-        (coachesData || []).map(async (coach) => {
-          const { data: sessions } = await supabase
-            .from('training_sessions')
-            .select('session_date')
-            .eq('coach_id', coach.id)
-            .order('session_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          return {
-            ...coach,
-            last_session_date: sessions?.session_date || null,
-          };
-        })
-      );
-
-      const playersWithSessions = await Promise.all(
-        (playersData || []).map(async (player) => {
-          const { data: sessions } = await supabase
-            .from('training_sessions')
-            .select('session_date')
-            .eq('player_id', player.id)
-            .order('session_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          return {
-            ...player,
-            last_session_date: sessions?.session_date || null,
-          };
-        })
-      );
-
-      setCoaches(coachesWithSessions);
-      setPlayers(playersWithSessions);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Aucune session';

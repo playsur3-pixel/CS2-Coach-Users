@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { X, Mail, AlertCircle, CheckCircle } from "lucide-react";
-import { supabase } from "../lib/supabase";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -19,23 +18,6 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
     setError("");
     setMessage("");
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setMessage("Un email de réinitialisation a été envoyé à votre adresse !");
-        setEmail("");
-      }
-    } catch (err: any) {
-      setError("Une erreur est survenue lors de l'envoi de l'email.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleClose = () => {
     setEmail("");

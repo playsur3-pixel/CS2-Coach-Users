@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { X, Target } from 'lucide-react';
+import { useState } from "react";
+import { X, Target } from "lucide-react";
 
 type Props = {
   playerId: string;
@@ -8,62 +7,49 @@ type Props = {
   onSuccess: () => void;
 };
 
-export default function AddSessionModal({ playerId, onClose, onSuccess }: Props) {
+export default function AddSessionModal({
+  playerId,
+  onClose,
+  onSuccess,
+}: Props) {
   const [formData, setFormData] = useState({
-    hs_rate: '',
-    kills: '',
-    deaths: '',
-    accuracy: '',
-    map_name: '',
-    duration_minutes: '',
-    notes: '',
-    session_date_local: '',
-    exercise_type: '',
+    hs_rate: "",
+    kills: "",
+    deaths: "",
+    accuracy: "",
+    map_name: "",
+    duration_minutes: "",
+    notes: "",
+    session_date_local: "",
+    exercise_type: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
-    const sessionDateIso = formData.session_date_local
-      ? new Date(formData.session_date_local).toISOString()
-      : new Date().toISOString();
-
-    const { error: insertError } = await supabase
-      .from('training_sessions')
-      .insert([
-        {
-          player_id: playerId,
-          hs_rate: parseFloat(formData.hs_rate),
-          kills: parseInt(formData.kills),
-          deaths: parseInt(formData.deaths),
-          accuracy: parseFloat(formData.accuracy),
-          map_name: formData.map_name,
-          duration_minutes: parseInt(formData.duration_minutes),
-          notes: formData.notes,
-          session_date: sessionDateIso,
-          exercise_type: formData.exercise_type,
-        },
-      ]);
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-    } else {
-      onSuccess();
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const cs2Maps = [
-    'Dust 2', 'Mirage', 'Inferno', 'Nuke', 'Overpass',
-    'Vertigo', 'Ancient', 'Anubis', 'Train', 'Cache'
+    "Dust 2",
+    "Mirage",
+    "Inferno",
+    "Nuke",
+    "Overpass",
+    "Vertigo",
+    "Ancient",
+    "Anubis",
+    "Train",
+    "Cache",
   ];
 
   return (
@@ -72,7 +58,9 @@ export default function AddSessionModal({ playerId, onClose, onSuccess }: Props)
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-orange-500" />
-            <h2 className="text-xl font-bold text-white">New Training Session</h2>
+            <h2 className="text-xl font-bold text-white">
+              New Training Session
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -245,7 +233,7 @@ export default function AddSessionModal({ playerId, onClose, onSuccess }: Props)
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white py-3 px-4 rounded-md transition shadow-lg shadow-orange-600/20 font-semibold disabled:opacity-50"
             >
-              {loading ? 'SAVING...' : 'SAVE SESSION'}
+              {loading ? "SAVING..." : "SAVE SESSION"}
             </button>
           </div>
         </form>

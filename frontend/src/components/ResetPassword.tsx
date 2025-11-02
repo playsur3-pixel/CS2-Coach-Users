@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase";
 import { Crosshair, Lock, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPassword() {
@@ -14,48 +13,6 @@ export default function ResetPassword() {
   const [isValidSession, setIsValidSession] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
-  useEffect(() => {
-    // Vérifier si nous avons une session de récupération valide
-    const checkRecoverySession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Vérifier si c'est une session de récupération
-        if (session?.user && session.user.recovery_sent_at) {
-          setIsValidSession(true);
-        } else {
-          // Essayer de récupérer les paramètres de l'URL pour une session de récupération
-          const urlParams = new URLSearchParams(window.location.search);
-          const accessToken = urlParams.get('access_token');
-          const refreshToken = urlParams.get('refresh_token');
-          const type = urlParams.get('type');
-          
-          if (accessToken && type === 'recovery') {
-            // Définir la session avec les tokens de récupération
-            const { error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || ''
-            });
-            
-            if (!error) {
-              setIsValidSession(true);
-            } else {
-              setError("Session de récupération invalide ou expirée.");
-            }
-          } else {
-            setError("Aucune session de récupération trouvée. Veuillez utiliser le lien reçu par email.");
-          }
-        }
-      } catch (err) {
-        setError("Erreur lors de la vérification de la session.");
-      } finally {
-        setCheckingSession(false);
-      }
-    };
-
-    checkRecoverySession();
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -68,33 +25,6 @@ export default function ResetPassword() {
       setLoading(false);
       return;
     }
-
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess("Mot de passe mis à jour avec succès ! Vous allez être redirigé...");
-        // Rediriger vers la page de connexion après 2 secondes
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
-      }
-    } catch (err: any) {
-      setError("Une erreur est survenue lors de la mise à jour du mot de passe.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (checkingSession) {
     return (
