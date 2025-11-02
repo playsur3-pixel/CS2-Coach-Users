@@ -4,45 +4,84 @@ import { X, Users } from "lucide-react";
 
 type Props = {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (playerName?: string) => void;
 };
 
-// Minimal profile type for dropdown
-type ProfileItem = {
+type PlayerItem = {
   id: string;
   email?: string | null;
-  username?: string | null;
+  displayName?: string | null;
 };
 
 export default function AddPlayerModal({ onClose, onSuccess }: Props) {
   const { user } = useAuth();
-  const [profiles, setProfiles] = useState<ProfileItem[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [players, setPlayers] = useState<PlayerItem[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [manualName, setManualName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [profilesLoading, setProfilesLoading] = useState(true);
-  const [manualName, setManualName] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(true);
+
+  // Exemple de récupération de comptes joueurs (optionnel : Firestore)
+  useEffect(() => {
+    async function fetchPlayers() {
+      try {
+        setPlayersLoading(true);
+        // 🔹 Ici, tu pourras brancher Firebase (ex: Firestore)
+        // const snapshot = await getDocs(collection(db, "players"));
+        // setPlayers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+        // Pour l’instant : faux exemple de data
+        setPlayers([
+          { id: "1", displayName: "DemoPlayer", email: "demo@site.com" },
+          { id: "2", displayName: "Player2", email: "player2@site.com" },
+        ]);
+      } catch (err) {
+        console.error(err);
+        setError("Erreur lors du chargement des joueurs.");
+      } finally {
+        setPlayersLoading(false);
+      }
+    }
+    fetchPlayers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    if (!selectedProfileId && !manualName.trim()) {
-      setError(
-        "Sélectionnez un joueur existant ou saisissez un nom de joueur."
-      );
+    if (!selectedPlayerId && !manualName.trim()) {
+      setError("Sélectionnez un joueur existant ou saisissez un nom.");
       setLoading(false);
       return;
     }
 
-    const selected = profiles.find((p) => p.id === selectedProfileId);
+    const selected = players.find((p) => p.id === selectedPlayerId);
     const playerName =
       manualName.trim() ||
-      selected?.username ||
+      selected?.displayName ||
       selected?.email ||
-      "Unknown Player";
+      "Joueur inconnu";
 
+    try {
+      // 🔹 Ici, tu pourras plus tard créer une entrée Firestore
+      // await addDoc(collection(db, "linked_players"), {
+      //   coachId: user?.uid,
+      //   playerName,
+      //   playerId: selectedPlayerId || null,
+      // });
+
+      console.log("✅ Joueur ajouté :", playerName);
+      onSuccess(playerName);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Erreur lors de l’ajout du joueur.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -73,11 +112,11 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
             <label className="block text-zinc-300 text-sm font-semibold mb-2">
               UTILISATEUR (inscrit sur le site)
             </label>
-            {profilesLoading ? (
+            {playersLoading ? (
               <div className="text-zinc-400 text-sm">
                 Chargement des utilisateurs…
               </div>
-            ) : profiles.length === 0 ? (
+            ) : players.length === 0 ? (
               <>
                 <input
                   type="text"
@@ -87,20 +126,20 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
                   placeholder="Saisissez le nom du joueur (ex: demo)"
                 />
                 <p className="text-xs text-zinc-500 mt-2">
-                  Aucun utilisateur listé. Saisissez manuellement le nom du
-                  joueur.
+                  Aucun utilisateur listé. Saisissez manuellement un nom.
                 </p>
               </>
             ) : (
               <>
                 <select
-                  value={selectedProfileId}
-                  onChange={(e) => setSelectedProfileId(e.target.value)}
+                  value={selectedPlayerId}
+                  onChange={(e) => setSelectedPlayerId(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
                 >
-                  {profiles.map((p) => (
+                  <option value="">-- Sélectionner un joueur --</option>
+                  {players.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.username || p.email || p.id}
+                      {p.displayName || p.email || p.id}
                     </option>
                   ))}
                 </select>
@@ -111,7 +150,7 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
             )}
           </div>
 
-          {profiles.length > 0 && (
+          {players.length > 0 && (
             <div className="mb-6">
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 NOM DU JOUEUR (optionnel)
@@ -138,8 +177,8 @@ export default function AddPlayerModal({ onClose, onSuccess }: Props) {
               type="submit"
               disabled={
                 loading ||
-                profilesLoading ||
-                (!selectedProfileId && !manualName.trim())
+                playersLoading ||
+                (!selectedPlayerId && !manualName.trim())
               }
               className="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white py-3 px-4 rounded-md transition shadow-lg shadow-orange-600/20 font-semibold disabled:opacity-50"
             >

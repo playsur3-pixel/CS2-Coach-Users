@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Target } from "lucide-react";
+import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 type Props = {
   sessionId: string;
@@ -7,16 +9,14 @@ type Props = {
   onSuccess: () => void;
 };
 
+// Helper pour formater en datetime-local
 function toLocalInput(iso: string) {
   try {
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const mm = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mi = pad(d.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } catch {
     return "";
   }
@@ -42,46 +42,85 @@ export default function EditSessionModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSaving(true);
-
-    const sessionDateIso = formData.session_date_local
-      ? new Date(formData.session_date_local).toISOString()
-      : undefined; // keep original if not provided
-
-    const updatePayload: any = {
-      hs_rate: parseFloat(formData.hs_rate),
-      kills: parseInt(formData.kills),
-      deaths: parseInt(formData.deaths),
-      accuracy: parseFloat(formData.accuracy),
-      map_name: formData.map_name,
-      duration_minutes: parseInt(formData.duration_minutes),
-      notes: formData.notes,
-      exercise_type: formData.exercise_type,
+  // 🔄 Charger la session Firestore
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const ref = doc(db, "training_sessions", sessionId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          setFormData({
+            hs_rate: data.hs_rate?.toString() ?? "",
+            kills: data.kills?.toString() ?? "",
+            deaths: data.deaths?.toString() ?? "",
+            accuracy: data.accuracy?.toString() ?? "",
+            map_name: data.map_name ?? "",
+            duration_minutes: data.duration_minutes?.toString() ?? "",
+            notes: data.notes ?? "",
+            session_date_local: data.session_date
+              ? toLocalInput(data.session_date.toDate().toISOString())
+              : "",
+            exercise_type: data.exercise_type ?? "",
+          });
+        } else {
+          setError("Session introuvable.");
+        }
+      } catch (err: any) {
+        console.error(err);
+        setError("Erreur lors du chargement de la session.");
+      } finally {
+        setLoading(false);
+      }
     };
-    if (sessionDateIso) updatePayload.session_date = sessionDateIso;
 
-    const { error: updateError } = await 
-      .from("training_sessions")
-      .update(updatePayload)
-      .eq("id", sessionId);
+    fetchSession();
+  }, [sessionId]);
 
-    if (updateError) {
-      setError(updateError.message);
-      setSaving(false);
-    } else {
-      onSuccess();
-    }
-  };
-
+  // 🧠 Gestion changement d’entrée
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 💾 Sauvegarde des modifications
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+
+    try {
+      const ref = doc(db, "training_sessions", sessionId);
+      const payload: any = {
+        hs_rate: parseFloat(formData.hs_rate),
+        kills: parseInt(formData.kills),
+        deaths: parseInt(formData.deaths),
+        accuracy: parseFloat(formData.accuracy),
+        map_name: formData.map_name,
+        duration_minutes: parseInt(formData.duration_minutes),
+        notes: formData.notes,
+        exercise_type: formData.exercise_type,
+      };
+
+      if (formData.session_date_local) {
+        payload.session_date = Timestamp.fromDate(
+          new Date(formData.session_date_local)
+        );
+      }
+
+      await updateDoc(ref, payload);
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      setError("Erreur lors de la sauvegarde.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const cs2Maps = [
@@ -130,6 +169,7 @@ export default function EditSessionModal({
             </div>
           )}
 
+          {/* --- FORM --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
@@ -143,6 +183,7 @@ export default function EditSessionModal({
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
               />
             </div>
+
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 MAP
@@ -161,6 +202,7 @@ export default function EditSessionModal({
                 ))}
               </select>
             </div>
+
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 TYPE D'EXERCICE
@@ -183,69 +225,29 @@ export default function EditSessionModal({
                 <option value="deathmatch">Deathmatch</option>
               </select>
             </div>
-            <div>
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">
-                HS Rate (%)
-              </label>
-              <input
-                type="number"
-                name="hs_rate"
-                step="0.01"
-                value={formData.hs_rate}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">
-                Accuracy (%)
-              </label>
-              <input
-                type="number"
-                name="accuracy"
-                step="0.01"
-                value={formData.accuracy}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">
-                Kills
-              </label>
-              <input
-                type="number"
-                name="kills"
-                value={formData.kills}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">
-                Deaths
-              </label>
-              <input
-                type="number"
-                name="deaths"
-                value={formData.deaths}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-300 text-sm font-semibold mb-2">
-                Durée (minutes)
-              </label>
-              <input
-                type="number"
-                name="duration_minutes"
-                value={formData.duration_minutes}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
-              />
-            </div>
+
+            {[
+              { label: "HS Rate (%)", name: "hs_rate" },
+              { label: "Accuracy (%)", name: "accuracy" },
+              { label: "Kills", name: "kills" },
+              { label: "Deaths", name: "deaths" },
+              { label: "Durée (minutes)", name: "duration_minutes" },
+            ].map(({ label, name }) => (
+              <div key={name}>
+                <label className="block text-zinc-300 text-sm font-semibold mb-2">
+                  {label}
+                </label>
+                <input
+                  type="number"
+                  name={name}
+                  value={(formData as any)[name]}
+                  onChange={handleChange}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
+                />
+              </div>
+            ))}
           </div>
+
           <div className="mb-6">
             <label className="block text-zinc-300 text-sm font-semibold mb-2">
               Notes
@@ -258,6 +260,8 @@ export default function EditSessionModal({
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white"
             />
           </div>
+
+          {/* --- BUTTONS --- */}
           <div className="flex gap-3">
             <button
               type="button"

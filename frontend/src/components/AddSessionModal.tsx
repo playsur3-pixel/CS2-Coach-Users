@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { X, Target } from "lucide-react";
+// import { db } from "../lib/firebase"; // décommente quand Firestore sera branché
+// import { addDoc, collection, Timestamp } from "firebase/firestore";
 
 type Props = {
   playerId: string;
@@ -26,17 +28,55 @@ export default function AddSessionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
+  // 🧠 Gestion du changement de champ
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 💾 Soumission du formulaire
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      if (
+        !formData.hs_rate ||
+        !formData.kills ||
+        !formData.deaths ||
+        !formData.map_name
+      ) {
+        throw new Error("Veuillez remplir tous les champs obligatoires.");
+      }
+
+      // Exemple de sauvegarde Firestore :
+      /*
+      await addDoc(collection(db, "training_sessions"), {
+        player_id: playerId,
+        ...formData,
+        hs_rate: Number(formData.hs_rate),
+        accuracy: Number(formData.accuracy),
+        kills: Number(formData.kills),
+        deaths: Number(formData.deaths),
+        duration_minutes: Number(formData.duration_minutes),
+        created_at: Timestamp.now(),
+      });
+      */
+
+      console.log("✅ Session saved:", formData);
+
+      onSuccess(); // refresh parent
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Erreur lors de la sauvegarde de la session.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const cs2Maps = [
@@ -59,7 +99,7 @@ export default function AddSessionModal({
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-orange-500" />
             <h2 className="text-xl font-bold text-white">
-              New Training Session
+              Nouvelle séance d'entraînement
             </h2>
           </div>
           <button
@@ -77,7 +117,9 @@ export default function AddSessionModal({
             </div>
           )}
 
+          {/* FORMULAIRE */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Headshot rate */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 HEADSHOT RATE (%)
@@ -96,6 +138,7 @@ export default function AddSessionModal({
               />
             </div>
 
+            {/* Accuracy */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 ACCURACY (%)
@@ -114,6 +157,7 @@ export default function AddSessionModal({
               />
             </div>
 
+            {/* Kills */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 KILLS
@@ -130,6 +174,7 @@ export default function AddSessionModal({
               />
             </div>
 
+            {/* Deaths */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 DEATHS
@@ -146,6 +191,7 @@ export default function AddSessionModal({
               />
             </div>
 
+            {/* Map */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 MAP
@@ -157,7 +203,7 @@ export default function AddSessionModal({
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition"
                 required
               >
-                <option value="">Select map</option>
+                <option value="">Sélectionner une map</option>
                 {cs2Maps.map((map) => (
                   <option key={map} value={map}>
                     {map}
@@ -166,6 +212,7 @@ export default function AddSessionModal({
               </select>
             </div>
 
+            {/* Exercice */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 TYPE D'EXERCICE
@@ -189,6 +236,7 @@ export default function AddSessionModal({
               </select>
             </div>
 
+            {/* Duration */}
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
                 DURATION (minutes)
@@ -206,6 +254,7 @@ export default function AddSessionModal({
             </div>
           </div>
 
+          {/* Notes */}
           <div className="mb-6">
             <label className="block text-zinc-300 text-sm font-semibold mb-2">
               NOTES
@@ -216,24 +265,25 @@ export default function AddSessionModal({
               onChange={handleChange}
               rows={3}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-md py-3 px-4 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition resize-none"
-              placeholder="Training observations and areas to improve..."
+              placeholder="Observations ou points d'amélioration..."
             />
           </div>
 
+          {/* Boutons */}
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-3 px-4 rounded-md transition font-semibold"
             >
-              CANCEL
+              ANNULER
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white py-3 px-4 rounded-md transition shadow-lg shadow-orange-600/20 font-semibold disabled:opacity-50"
             >
-              {loading ? "SAVING..." : "SAVE SESSION"}
+              {loading ? "ENREGISTREMENT..." : "SAUVEGARDER"}
             </button>
           </div>
         </form>

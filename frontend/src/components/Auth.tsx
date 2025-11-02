@@ -1,45 +1,64 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import { Crosshair, Mail, Lock, AlertCircle } from "lucide-react";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "../lib/firebase"; // ton init firebase.ts
 
 export default function Auth() {
-  const [email, setEmail] = useState(() => {
-    try {
-      return localStorage.getItem("lastEmail") ?? "";
-    } catch {
-      return "";
-    }
-  });
+  const [email, setEmail] = useState(
+    () => localStorage.getItem("lastEmail") ?? ""
+  );
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const { signIn } = useAuth();
 
+  const auth = getAuth(app);
+
+  // 🔄 Mémorise l’email pour la prochaine session
   useEffect(() => {
-    // Met à jour le localStorage au fil de la saisie pour faciliter la prochaine connexion
     try {
       localStorage.setItem("lastEmail", email);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }, [email]);
 
+  // 🔐 Connexion
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-
-    if (error) {
-      setError(error.message);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log("✅ Connecté :", email);
+    } catch (err: any) {
+      console.error(err);
+      switch (err.code) {
+        case "auth/invalid-email":
+          setError("Adresse email invalide.");
+          break;
+        case "auth/user-not-found":
+          setError("Aucun compte trouvé pour cet email.");
+          break;
+        case "auth/wrong-password":
+          setError("Mot de passe incorrect.");
+          break;
+        case "auth/too-many-requests":
+          setError("Trop de tentatives. Réessayez plus tard.");
+          break;
+        default:
+          setError("Erreur lors de la connexion. Réessayez.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
+      {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-stone-950 to-neutral-950"></div>
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-radial from-orange-500/20 via-orange-600/10 to-transparent blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-radial from-zinc-700/20 via-stone-700/10 to-transparent blur-3xl"></div>
@@ -50,8 +69,11 @@ export default function Auth() {
         alt="CS2 Logo"
         className="absolute z-0 top-1/2 left-0 -translate-y-1/2 w-[125%] h-auto opacity-60 blur-[5px] pointer-events-none select-none"
       />
+
+      {/* CONTAINER */}
       <div className="w-full max-w-md relative z-10">
-        <div className="relative z-10 bg-zinc-950/80 backdrop-blur-xl border-2 border-zinc-800/50 rounded-lg shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="bg-zinc-950/80 backdrop-blur-xl border-2 border-zinc-800/50 rounded-lg shadow-2xl shadow-black/50 overflow-hidden">
+          {/* HEADER */}
           <div className="bg-gradient-to-r from-zinc-900 to-stone-900 p-6 text-center border-b border-zinc-800/50">
             <div className="flex items-center justify-center gap-3 mb-2">
               <Crosshair
@@ -67,6 +89,7 @@ export default function Auth() {
             </p>
           </div>
 
+          {/* FORM */}
           <div className="p-8">
             {error && (
               <div className="flex items-center gap-2 p-3 rounded-md mb-6 bg-red-500/10 border border-red-500/30 text-red-400">
@@ -117,11 +140,11 @@ export default function Auth() {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold py-3 px-4 rounded-md transition-all shadow-lg shadow-orange-600/20 hover:shadow-orange-600/40 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
               >
-                {loading ? "CONNECTING..." : "ENTER SYSTEM"}
+                {loading ? "CONNEXION..." : "ENTRER DANS LE SYSTÈME"}
               </button>
             </form>
 
-            {/* Bouton Password forget */}
+            {/* MOT DE PASSE OUBLIÉ */}
             <div className="mt-4 text-center">
               <button
                 type="button"
@@ -134,14 +157,12 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="mt-4 text-center text-zinc-600 text-sm"></div>
+        {/* Modal Password Reset */}
+        <ForgotPasswordModal
+          isOpen={showForgotModal}
+          onClose={() => setShowForgotModal(false)}
+        />
       </div>
-
-      {/* Modal de mot de passe oublié */}
-      <ForgotPasswordModal 
-        isOpen={showForgotModal} 
-        onClose={() => setShowForgotModal(false)} 
-      />
     </div>
   );
 }

@@ -1,24 +1,51 @@
 import { useState } from "react";
 import { X, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import { app } from "../lib/firebase";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
+export default function ForgotPasswordModal({
+  isOpen,
+  onClose,
+}: ForgotPasswordModalProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const auth = getAuth(app);
 
+  // 🔄 Réinitialisation du mot de passe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setMessage("");
 
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setMessage("✅ Un email de réinitialisation a été envoyé !");
+    } catch (err: any) {
+      console.error(err);
+      switch (err.code) {
+        case "auth/invalid-email":
+          setError("Adresse email invalide.");
+          break;
+        case "auth/user-not-found":
+          setError("Aucun utilisateur trouvé avec cet email.");
+          break;
+        default:
+          setError("Une erreur est survenue. Réessayez plus tard.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // 🔁 Réinitialise l’état quand on ferme
   const handleClose = () => {
     setEmail("");
     setError("");
@@ -31,6 +58,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-zinc-950/90 backdrop-blur-xl border-2 border-zinc-800/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md">
+        {/* HEADER */}
         <div className="bg-gradient-to-r from-zinc-900 to-stone-900 p-4 border-b border-zinc-800/50 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">Mot de passe oublié</h2>
           <button
@@ -41,6 +69,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
           </button>
         </div>
 
+        {/* BODY */}
         <div className="p-6">
           {error && (
             <div className="flex items-center gap-2 p-3 rounded-md mb-4 bg-red-500/10 border border-red-500/30 text-red-400">
@@ -56,6 +85,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
             </div>
           )}
 
+          {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-zinc-300 text-sm font-semibold mb-2">
@@ -93,7 +123,8 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
           </form>
 
           <p className="text-zinc-500 text-xs mt-4 text-center">
-            Vous recevrez un email avec un lien pour réinitialiser votre mot de passe.
+            Vous recevrez un email contenant un lien pour réinitialiser votre
+            mot de passe.
           </p>
         </div>
       </div>

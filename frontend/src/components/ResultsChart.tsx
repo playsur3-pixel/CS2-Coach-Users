@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from "react";
 
+type TrainingSession = {
+  session_date: string;
+  exercise_type?: string;
+  hs_rate?: number;
+  accuracy?: number;
+  kills?: number;
+  deaths?: number;
+  duration_minutes?: number;
+};
+
 type MetricKey =
   | "hs_rate"
   | "accuracy"
@@ -12,7 +22,7 @@ type ResultsChartProps = {
   sessions: TrainingSession[];
   metric: MetricKey;
   height?: number;
-  exerciseType?: string; // optional filter by exercise type
+  exerciseType?: string;
 };
 
 function formatDateLabel(iso: string) {
@@ -25,10 +35,9 @@ function formatDateLabel(iso: string) {
 }
 
 function getMetricValue(s: TrainingSession, metric: MetricKey) {
-  if (metric === "kd") {
-    return s.deaths === 0 ? s.kills : s.kills / s.deaths;
-  }
-  return Number(s[metric] as any);
+  if (metric === "kd")
+    return s.deaths === 0 ? s.kills ?? 0 : (s.kills ?? 0) / (s.deaths ?? 1);
+  return Number(s[metric] ?? 0);
 }
 
 export default function ResultsChart({
@@ -40,16 +49,38 @@ export default function ResultsChart({
   const [showMin, setShowMin] = useState(true);
   const [showAvg, setShowAvg] = useState(true);
   const [showMax, setShowMax] = useState(true);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!exerciseType) return sessions;
-    return sessions.filter(
-      (s) =>
-        (s.exercise_type || "").toLowerCase() === exerciseType.toLowerCase()
+  // 🧮 Préparation optimisée
+  const { sorted, values, yMin, yMax, yAvg } = useMemo(() => {
+    const filtered = exerciseType
+      ? sessions.filter(
+          (s) =>
+            (s.exercise_type || "").toLowerCase() === exerciseType.toLowerCase()
+        )
+      : sessions;
+
+    const sortedData = [...filtered].sort(
+      (a, b) =>
+        new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
     );
-  }, [sessions, exerciseType]);
 
-  if (!filtered || filtered.length === 0) {
+    const vals = sortedData.map((s) => getMetricValue(s, metric));
+    const min = Math.min(...vals);
+    const maxRaw = Math.max(...vals);
+    const max = maxRaw === min ? min + 1 : maxRaw;
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+    return {
+      sorted: sortedData,
+      values: vals,
+      yMin: min,
+      yMax: max,
+      yAvg: avg,
+    };
+  }, [sessions, metric, exerciseType]);
+
+  if (!sorted.length) {
     return (
       <div className="p-6 text-zinc-500">
         Aucune donnée de session pour le graphique.
@@ -57,41 +88,34 @@ export default function ResultsChart({
     );
   }
 
-  // Sort by date ascending for a left-to-right progression
-  const sorted = [...filtered].sort(
-    (a, b) =>
-      new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
-  );
-
-  const values = sorted.map((s) => getMetricValue(s, metric));
-  const yMin = Math.min(...values);
-  const yMaxRaw = Math.max(...values);
-  const yMax = yMaxRaw === yMin ? yMin + 1 : yMaxRaw;
-  const yAvg = values.reduce((a, b) => a + b, 0) / values.length;
-
-  const width = 640; // fixed width container; responsive could be added later
+  // 🧭 Dimensions
+  const width = 640;
   const padding = 30;
   const innerWidth = width - padding * 2;
   const innerHeight = height - padding * 2;
 
-  const points = values.map((v, i) => {
-    const x = padding + (i / Math.max(sorted.length - 1, 1)) * innerWidth;
-    const ratio = (v - yMin) / (yMax - yMin);
-    const y = padding + innerHeight - ratio * innerHeight;
-    return `${x},${y}`;
-  });
+  const points = useMemo(() => {
+    return values.map((v, i) => {
+      const x = padding + (i / Math.max(sorted.length - 1, 1)) * innerWidth;
+      const ratio = (v - yMin) / (yMax - yMin);
+      const y = padding + innerHeight - ratio * innerHeight;
+      return { x, y, value: v, date: sorted[i].session_date };
+    });
+  }, [values, sorted, yMin, yMax]);
 
-  const path = `M ${points.join(" L ")}`;
+  const path = useMemo(
+    () => `M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`,
+    [points]
+  );
 
   const refLinePath = (value: number) => {
-    // horizontal line across chart space
     const ratio = (value - yMin) / (yMax - yMin);
     const y = padding + innerHeight - ratio * innerHeight;
     return `M ${padding} ${y} L ${width - padding} ${y}`;
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 relative">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className="text-sm text-zinc-400">
@@ -132,12 +156,9 @@ export default function ResultsChart({
             />{" "}
             Max
           </label>
-          <div className="text-sm text-zinc-400">
-            Min: <span className="text-white">{yMin.toFixed(2)}</span> · Max:{" "}
-            <span className="text-white">{yMax.toFixed(2)}</span>
-          </div>
         </div>
       </div>
+
       <svg
         width={width}
         height={height}
@@ -161,7 +182,7 @@ export default function ResultsChart({
           strokeWidth={1}
         />
 
-        {/* Reference lines */}
+        {/* Lignes de référence */}
         {showMin && (
           <path
             d={refLinePath(yMin)}
@@ -204,7 +225,7 @@ export default function ResultsChart({
           </linearGradient>
         </defs>
 
-        {/* Path */}
+        {/* Ligne principale */}
         <path
           d={path}
           fill="none"
@@ -214,53 +235,50 @@ export default function ResultsChart({
 
         {/* Points */}
         {points.map((p, i) => {
-          const [xStr, yStr] = p.split(",");
-          const x = Number(xStr);
-          const y = Number(yStr);
-          // interpolate color from orange to green based on index
           const t = i / Math.max(points.length - 1, 1);
-          const r = Math.round(249 * (1 - t) + 34 * t); // 0xF9 -> 249, 34
-          const g = Math.round(115 * (1 - t) + 197 * t); // 0x73 -> 115, 197
-          const b = Math.round(22 * (1 - t) + 94 * t); // 0x16 -> 22, 94
+          const r = Math.round(249 * (1 - t) + 34 * t);
+          const g = Math.round(115 * (1 - t) + 197 * t);
+          const b = Math.round(22 * (1 - t) + 94 * t);
           const color = `rgb(${r}, ${g}, ${b})`;
+
           return (
             <g key={i}>
-              <circle cx={x} cy={y} r={3} fill={color} />
-              {/* Date labels every N points */}
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={hoverIndex === i ? 5 : 3}
+                fill={color}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
+                style={{ cursor: "pointer", transition: "r 0.1s" }}
+              />
+              {/* Tooltip minimal */}
+              {hoverIndex === i && (
+                <text
+                  x={p.x}
+                  y={p.y - 10}
+                  fontSize={10}
+                  textAnchor="middle"
+                  fill="#fff"
+                  className="pointer-events-none"
+                >
+                  {p.value.toFixed(2)}
+                </text>
+              )}
               {i % Math.ceil(sorted.length / 6) === 0 && (
                 <text
-                  x={x}
+                  x={p.x}
                   y={height - padding + 14}
                   fontSize={10}
                   textAnchor="middle"
                   fill="#a1a1aa"
                 >
-                  {formatDateLabel(sorted[i].session_date)}
+                  {formatDateLabel(p.date)}
                 </text>
               )}
             </g>
           );
         })}
-
-        {/* Y labels */}
-        <text
-          x={padding - 6}
-          y={padding}
-          fontSize={10}
-          textAnchor="end"
-          fill="#a1a1aa"
-        >
-          {yMax.toFixed(2)}
-        </text>
-        <text
-          x={padding - 6}
-          y={height - padding}
-          fontSize={10}
-          textAnchor="end"
-          fill="#a1a1aa"
-        >
-          {yMin.toFixed(2)}
-        </text>
       </svg>
     </div>
   );
